@@ -1,0 +1,477 @@
+<script>
+    // Available Food Items
+let foodItems = [
+    { id: 1, name: "Pizza", price: 200, quantity: 10 },
+    { id: 2, name: "Burger", price: 120, quantity: 15 },
+    { id: 3, name: "Pasta", price: 150, quantity: 8 },
+    { id: 4, name: "Sandwich", price: 100, quantity: 12 },
+    { id: 5, name: "French Fries", price: 80, quantity: 20 },
+    { id: 6, name: "Chicken Biryani", price: 250, quantity: 10 },
+    { id: 7, name: "Cold Coffee", price: 90, quantity: 15 }
+];
+
+let cart = [];
+let orderPlaced = false;
+let paymentDone = false;
+let discount = 0;
+let deliveryCharge = 30;
+let orderId = 1001;
+let orderStatus = "Order Confirmed";
+
+// 1. Display Menu
+function displayMenu() {
+    console.log("===== AVAILABLE FOOD ITEMS =====");
+
+    foodItems.forEach(function(item) {
+        console.log(
+            "ID: " + item.id +
+            " | Name: " + item.name
+        );
+    });
+}
+
+// Find Food Using ID
+function findFood(id) {
+    return foodItems.find(function(item) {
+        return item.id === id;
+    });
+}
+
+// 2. Select Food
+function selectFood() {
+    let id = Number(prompt("Enter Food ID:"));
+    let item = findFood(id);
+
+    if (item && item.quantity > 0) {
+        console.log("===== SELECTED FOOD =====");
+        console.log("Food ID: " + item.id);
+        console.log("Food Name: " + item.name);
+        console.log("Price: Rs." + item.price);
+        console.log("Available Quantity: " + item.quantity);
+    } else {
+        console.log("Invalid Food ID or Food Not Available!");
+    }
+}
+
+// Display Cart
+function displayCart() {
+    console.log("===== YOUR CART =====");
+
+    if (cart.length === 0) {
+        console.log("Cart is Empty!");
+        return;
+    }
+
+    cart.forEach(function(item) {
+        console.log(
+            "ID: " + item.id +
+            " | Name: " + item.name +
+            " | Price: Rs." + item.price +
+            " | Quantity: " + item.quantity +
+            " | Total: Rs." + (item.price * item.quantity)
+        );
+    });
+}
+
+// 3. Add to Cart
+function addToCart() {
+    if (orderPlaced) {
+        console.log("Please complete or cancel your current order first!");
+        return;
+    }
+
+    let choice;
+
+    do {
+        let id = Number(prompt("Enter Food ID:"));
+        let item = findFood(id);
+
+        if (!item) {
+            alert("Invalid Food ID!");
+        } else if (item.quantity <= 0) {
+            alert("Food Not Available!");
+        } else {
+            let qty = Number(prompt("Enter Quantity:"));
+
+            if (!Number.isInteger(qty) || qty <= 0) {
+                alert("Enter a valid quantity!");
+            } else if (qty > item.quantity) {
+                alert("Insufficient Stock!");
+            } else {
+                let cartItem = cart.find(function(food) {
+                    return food.id === id;
+                });
+
+                if (cartItem) {
+                    cartItem.quantity += qty;
+                } else {
+                    cart.push({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: qty
+                    });
+                }
+
+                item.quantity -= qty;
+                discount = 0;
+
+                console.log(item.name + " added to cart successfully!");
+                displayCart();
+            }
+        }
+
+        choice = prompt(
+            "Do you want to add more items?\n1. Yes\n2. No"
+        );
+
+    } while (choice === "1");
+
+    if (cart.length > 0) {
+        console.log("===== FINAL CART DETAILS =====");
+        displayCart();
+    }
+}
+
+// 4. Remove Item
+function removeItem() {
+    if (cart.length === 0) {
+        console.log("Cart is Empty!");
+        return;
+    }
+
+    displayCart();
+
+    let id = Number(prompt("Enter Food ID to Remove:"));
+
+    let index = cart.findIndex(function(item) {
+        return item.id === id;
+    });
+
+    if (index === -1) {
+        console.log("Food ID Not Found in Cart!");
+        return;
+    }
+
+    let removedItem = cart[index];
+
+    let qty = Number(prompt("Enter Quantity to Remove:"));
+
+    if (!Number.isInteger(qty) ||
+        qty <= 0 ||
+        qty > removedItem.quantity) {
+        console.log("Invalid Quantity!");
+        return;
+    }
+
+    removedItem.quantity -= qty;
+
+    let food = findFood(id);
+    food.quantity += qty;
+
+    if (removedItem.quantity === 0) {
+        cart.splice(index, 1);
+    }
+
+    discount = 0;
+
+    console.log("Item Removed Successfully!");
+    displayCart();
+}
+
+// 5. Calculate Bill
+function calculateBill() {
+    if (cart.length === 0) {
+        console.log("Cart is Empty!");
+        return;
+    }
+
+    let subtotal = 0;
+
+    console.log("===== BILL DETAILS =====");
+
+    cart.forEach(function(item) {
+        let total = item.price * item.quantity;
+        subtotal += total;
+
+        console.log(
+            "ID: " + item.id +
+            " | " + item.name +
+            " | " + item.quantity +
+            " x Rs." + item.price +
+            " = Rs." + total
+        );
+    });
+
+    let finalAmount = subtotal + deliveryCharge - discount;
+
+    console.log("Subtotal: Rs." + subtotal);
+    console.log("Delivery Charge: Rs." + deliveryCharge);
+    console.log("Discount: Rs." + discount);
+    console.log("Final Amount: Rs." + finalAmount);
+
+    return finalAmount;
+}
+
+// 6. Apply Coupon
+function applyCoupon() {
+    if (cart.length === 0) {
+        console.log("Add Items to Cart First!");
+        return;
+    }
+
+    let subtotal = 0;
+
+    cart.forEach(function(item) {
+        subtotal += item.price * item.quantity;
+    });
+
+    if (subtotal < 300) {
+        console.log("Coupon Available Only for Orders Above Rs.300");
+        return;
+    }
+
+    let coupon = prompt(
+        "Available Coupons:\n" +
+        "FOOD10 - 10% Discount\n" +
+        "FOOD20 - 20% Discount\n" +
+        "Enter Coupon Code:"
+    );
+
+    if (coupon === null) return;
+
+    coupon = coupon.trim().toUpperCase();
+
+    if (coupon === "FOOD10") {
+        discount = subtotal * 0.10;
+        console.log("FOOD10 Applied Successfully!");
+
+    } else if (coupon === "FOOD20") {
+        discount = subtotal * 0.20;
+        console.log("FOOD20 Applied Successfully!");
+
+    } else {
+        console.log("Invalid Coupon Code!");
+        return;
+    }
+
+    console.log("Discount: Rs." + discount);
+    calculateBill();
+}
+
+// 7. Make Payment
+function makePayment() {
+    if (cart.length === 0) {
+        console.log("Cart is Empty!");
+        return;
+    }
+
+    if (orderPlaced) {
+        console.log("Order Already Placed!");
+        return;
+    }
+
+    let amount = calculateBill();
+
+    let payment = prompt(
+        "Select Payment Method:\n" +
+        "1. UPI\n" +
+        "2. Debit Card\n" +
+        "3. Cash on Delivery"
+    );
+
+    if (payment === null) return;
+
+    if (payment === "1") {
+        console.log("UPI Payment Successful!");
+        paymentDone = true;
+
+    } else if (payment === "2") {
+        console.log("Debit Card Payment Successful!");
+        paymentDone = true;
+
+    } else if (payment === "3") {
+        console.log("Cash on Delivery Selected!");
+        paymentDone = false;
+
+    } else {
+        console.log("Invalid Payment Method!");
+        return;
+    }
+
+    orderPlaced = true;
+    orderStatus = "Order Confirmed";
+
+    console.log("===== ORDER CONFIRMED =====");
+    console.log("Order ID: " + orderId);
+    console.log("Total Amount: Rs." + amount);
+    console.log("Thank You for Ordering!");
+}
+
+// 8. Track Order
+function trackOrder() {
+    if (!orderPlaced) {
+        console.log("No Active Order Found!");
+        return;
+    }
+
+    console.log("===== ORDER TRACKING =====");
+    console.log("Order ID: " + orderId);
+    console.log("Order Status: " + orderStatus);
+
+    let choice = prompt(
+        "Update Order Status:\n" +
+        "1. Preparing\n" +
+        "2. Out for Delivery\n" +
+        "3. Delivered"
+    );
+
+    if (choice === "1") {
+        orderStatus = "Preparing";
+
+    } else if (choice === "2") {
+        orderStatus = "Out for Delivery";
+
+    } else if (choice === "3") {
+        orderStatus = "Delivered";
+
+    } else {
+        console.log("Invalid Choice!");
+        return;
+    }
+
+    console.log("Updated Order Status: " + orderStatus);
+
+    if (orderStatus === "Delivered") {
+        console.log("Order Delivered Successfully!");
+
+        cart = [];
+        orderPlaced = false;
+        paymentDone = false;
+        discount = 0;
+        orderId++;
+    }
+}
+
+// 9. Cancel Order
+function cancelOrder() {
+    if (!orderPlaced) {
+        console.log("No Active Order to Cancel!");
+        return;
+    }
+
+    if (orderStatus === "Delivered") {
+        console.log("Delivered Order Cannot Be Cancelled!");
+        return;
+    }
+
+    let confirmCancel = confirm(
+        "Are you sure you want to cancel this order?"
+    );
+
+    if (confirmCancel) {
+        cart.forEach(function(item) {
+            let food = findFood(item.id);
+
+            if (food) {
+                food.quantity += item.quantity;
+            }
+        });
+
+        cart = [];
+
+        if (paymentDone) {
+            console.log("Payment Refund Would Be Processed (Simulation Only).");
+        }
+
+        orderPlaced = false;
+        paymentDone = false;
+        discount = 0;
+        orderStatus = "Order Cancelled";
+
+        console.log("Order ID: " + orderId);
+        console.log("Order Cancelled Successfully!");
+
+        orderId++;
+
+    } else {
+        console.log("Order Cancellation Stopped!");
+    }
+}
+
+// Main Menu
+function mainMenu() {
+    let choice;
+
+    do {
+        choice = prompt(
+            "===== ONLINE FOOD ORDERING APPLICATION =====\n" +
+            "1. Display Menu\n" +
+            "2. Select Food\n" +
+            "3. Add to Cart\n" +
+            "4. Remove Item\n" +
+            "5. Calculate Bill\n" +
+            "6. Apply Coupon\n" +
+            "7. Make Payment\n" +
+            "8. Track Order\n" +
+            "9. Cancel Order\n" +
+            "10. Exit\n\n" +
+            "Enter Your Choice:"
+        );
+
+        switch (choice) {
+            case "1":
+                displayMenu();
+                break;
+
+            case "2":
+                selectFood();
+                break;
+
+            case "3":
+                addToCart();
+                break;
+
+            case "4":
+                removeItem();
+                break;
+
+            case "5":
+                calculateBill();
+                break;
+
+            case "6":
+                applyCoupon();
+                break;
+
+            case "7":
+                makePayment();
+                break;
+
+            case "8":
+                trackOrder();
+                break;
+
+            case "9":
+                cancelOrder();
+                break;
+
+            case "10":
+                console.log("Thank You! Visit Again!");
+                break;
+
+            case null:
+                console.log("Application Closed!");
+                return;
+
+            default:
+                alert("Invalid Choice! Please Enter a Valid Option.");
+        }
+
+    } while (choice !== "10");
+}
+
+// Start Application
+mainMenu();
+
+</script>
